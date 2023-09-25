@@ -1,6 +1,7 @@
 #container {
     display: flex;
     justify-content: space-between;  /* Distributes the space between the two child divs */
+    position: relative;
 }
 
 /* MATRIX Style info*/

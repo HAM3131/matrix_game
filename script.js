@@ -27,46 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
 function setMatrix(document, matrixWrapper, {mainMatrix, augmentMatrix}) {
     // Get child elements from the matrix wrapper
     const matrixContainer = matrixWrapper.querySelector('#matrix-container');
-    const matrixOpenParen = matrixWrapper.querySelector('#matrix-open-paren');
-    const matrixCloseParen = matrixWrapper.querySelector('#matrix-close-paren');
 
-    // Clear existing matrix content
-    matrixContainer.innerHTML = '';
+    let LaTeXString = matrixToLaTeX({mainMatrix, augmentMatrix});
 
-    // Create matrix based on the input 2D array
-    for (let i = 0; i < mainMatrix.length; i++) {
-        const row = document.createElement('div');
-        row.classList.add('matrix-row');
-        
-        for (let j = 0; j < mainMatrix[i].length; j++) {
-            const cell = document.createElement('div');
-            cell.classList.add('matrix-cell');
-            cell.innerText = mainMatrix[i][j];
-            row.appendChild(cell);
-        }
-
-        // If an augmenting matrix is provided, add a separator and the augmenting values
-        if (augmentMatrix.length > 0) {
-            const separator = document.createElement('div');
-            separator.classList.add('matrix-separator');
-            separator.innerText = '|';
-            row.appendChild(separator);
-
-            for (let j = 0; j < augmentMatrix[i].length; j++) {
-                const cell = document.createElement('div');
-                cell.classList.add('matrix-cell');
-                cell.innerText = augmentMatrix[i][j];
-                row.appendChild(cell);
-            }
-        }
-        
-        matrixContainer.appendChild(row);
-    }
-
-    // Scale parentheses based on the matrix container's height
-    const matrixHeight = matrixContainer.offsetHeight;
-    matrixOpenParen.style.fontSize = `${matrixHeight}px`;
-    matrixCloseParen.style.fontSize = `${matrixHeight}px`;
+    matrixContainer.innerHTML = LaTeXString;
 }
 
 function resetBar(loadingBar) {
@@ -129,4 +93,42 @@ function replaceFade(element, replacement) {
     setTimeout(() => {
       element.parentNode.removeChild(element);
     }, 500);
+}
+
+function matrixToLaTeX({mainMatrix, augmentMatrix}) {
+    let columnFormat = [];
+    for (let j = 0; j < mainMatrix[0].length; j++) {
+    columnFormat.push("c");
+    }
+
+    // Add vertical line for augmented matrix if it exists
+    if (augmentMatrix.length > 0) {
+    columnFormat.push("|");
+    for (let j = 0; j < augmentMatrix[0].length; j++) {
+        columnFormat.push("c");
+    }
+    }
+
+    // Initialize an empty LaTeX string
+    let latexString = "\\[\\left[\\begin{array}{" + columnFormat.join("") + "}";
+
+    // Loop through each row of the main matrix
+    for (let i = 0; i < mainMatrix.length; i++) {
+    let row = mainMatrix[i];
+    latexString += row.join(" & ");
+
+    // If an augmented matrix exists, add the augmenting elements
+    if (augmentMatrix.length > 0) {
+        let augmentRow = augmentMatrix[i];
+        latexString += " & " + augmentRow.join(" & ");
+    }
+
+    // Add new row indicator
+    latexString += "\\\\";
+    }
+
+    // Close the LaTeX string
+    latexString += "\\end{array}\\right]\\]";
+
+    return latexString;
 }

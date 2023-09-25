@@ -11,14 +11,17 @@ document.addEventListener("DOMContentLoaded", () => {
             ['24'],
             ['34']
         ]
-    }
-    
+    }   
     
     const matrixWrapper = document.getElementById('matrix-wrapper');
     setMatrix(document, matrixWrapper, matrix, isAugmented=true);
     
     const loadingBars = document.getElementsByClassName('loading-bar');
     setInterval(() => tickBars(loadingBars), 10);
+
+    const originalElement = document.getElementById("original");
+    const replacementElement = document.getElementById("replacement");
+    replaceFade(originalElement, replacementElement);
 });
 
 function setMatrix(document, matrixWrapper, {mainMatrix, augmentMatrix}) {
@@ -93,4 +96,37 @@ function fillBar(loadingBar) {
             loadingBar.style.width = `${percentage}%`;
         }
     }
+}
+
+function replaceFade(element, replacement) {
+    // Apply initial styles to the element and its replacement
+    element.style.opacity = "1";
+    element.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+    element.style.position = "absolute";
+
+    replacement.style.opacity = "0";
+    replacement.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+    replacement.style.transform = "translateX(100px)";
+    replacement.style.position = "absolute";
+
+    // Append replacement to the same parent as the element
+    element.parentNode.appendChild(replacement);
+
+    replacement.style.display = "";
+  
+    // Append replacement to the same parent as the element
+    element.parentNode.appendChild(replacement);
+  
+    // Perform the animation
+    setTimeout(() => {
+      element.style.opacity = "0";
+      element.style.transform = "translateX(-100px)";
+      replacement.style.opacity = "1";
+      replacement.style.transform = "translateX(0)";
+    }, 0);
+  
+    // Remove the original element after the animation is complete
+    setTimeout(() => {
+      element.parentNode.removeChild(element);
+    }, 500);
 }

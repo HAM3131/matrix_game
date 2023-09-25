@@ -69,7 +69,7 @@ export class RowOp {
     }
 }
 
-class Rational {
+export class Rational {
     constructor(numerator, denominator = 1) {
       if (!Number.isInteger(numerator) || !Number.isInteger(denominator)) {
         throw new Error("Non integer input.")

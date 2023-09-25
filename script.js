@@ -16,10 +16,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }   
     
     const matrixWrapper = document.getElementById('matrix-wrapper');
-    setMatrix(document, matrixWrapper, matrix, isAugmented=true);
+    setMatrix(document, matrixWrapper, matrix);
     
     const loadingBars = document.getElementsByClassName('loading-bar');
     setInterval(() => tickBars(loadingBars), 10);
+
+    setTimeout(() => {
+        setMatrix(document, matrixWrapper, matrix)
+    }, 5000);
 });
 
 function setMatrix(document, matrixWrapper, {mainMatrix, augmentMatrix}) {
@@ -27,11 +31,12 @@ function setMatrix(document, matrixWrapper, {mainMatrix, augmentMatrix}) {
     const oldMatrix = matrixWrapper.querySelector('.matrix-container');
     const newMatrix = document.createElement("div");
     let LaTeXString = matrixToLaTeX({mainMatrix, augmentMatrix});
-    let next = nextRowOperation(mainMatrix);
+    let next = RowOp.fromMatrix(mainMatrix);
     LaTeXString += next.toLaTeX();
     
     newMatrix.classList.add("matrix-container");
     newMatrix.innerHTML = "\\[" + LaTeXString + "\\]";
+    MathJax.typeset([newMatrix]);
 
     replaceFade(oldMatrix, newMatrix);
 }
@@ -140,42 +145,6 @@ function matrixToLaTeX({mainMatrix, augmentMatrix}) {
     return latexString;
 }
 
-function nextRowOperation(matrix) {
-    const rows = matrix.length;
-    const cols = matrix[0].length;
-  
-    for (let i = 0; i < rows; i++) {
-      for (let j = 0; j < cols; j++) {
-        entry = matrix[i][j];
-        if (entry.numerator !== 0) {
-          if (!(entry.numerator === 1 && entry.denominator === 1)) {
-            return new RowOp("scale", i, null, new Rational(1, entry.numerator));
-          }
-  
-          for (let k = i + 1; k < rows; k++) {
-            const belowEntry = matrix[k][j];
-            if (belowEntry.numerator !== 0) {
-              return new RowOp("replace", i, k, belowEntry);
-            }
-          }
-          break;
-        }
-      }
-    }
-
-    for (let i = 0; i < cols; i++) {
-        if(matrix[i][i].numerator !== 1){
-            for (let j = i + 1; j < rows; j++){
-                if(matrix[j][i].numerator === 1){
-                    return new RowOp("swap", i, j);
-                }
-            }
-        }
-    }
-    
-    return new RowOp("none", null);
-}  
-
 class Rational {
     constructor(numerator, denominator = 1) {
       if (!Number.isInteger(numerator) || !Number.isInteger(denominator)) {
@@ -215,6 +184,42 @@ class RowOp {
         this.row1 = row1;
         this.row2 = row2;
         this.scalar = scalar; // Should be a Rational object
+    }
+
+    static fromMatrix(matrix) {
+        const rows = matrix.length;
+        const cols = matrix[0].length;
+    
+        for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            let entry = matrix[i][j];
+            if (entry.numerator !== 0) {
+            if (!(entry.numerator === 1 && entry.denominator === 1)) {
+                return new RowOp("scale", i, null, new Rational(1, entry.numerator));
+            }
+    
+            for (let k = i + 1; k < rows; k++) {
+                const belowEntry = matrix[k][j];
+                if (belowEntry.numerator !== 0) {
+                return new RowOp("replace", i, k, belowEntry);
+                }
+            }
+            break;
+            }
+        }
+        }
+
+        for (let i = 0; i < cols; i++) {
+            if(matrix[i][i].numerator !== 1){
+                for (let j = i + 1; j < rows; j++){
+                    if(matrix[j][i].numerator === 1){
+                        return new RowOp("swap", i, j);
+                    }
+                }
+            }
+        }
+        
+        return new RowOp("none", null);
     }
 
     toString() {

@@ -17,35 +17,15 @@
     align-items: center;  /* Centers the matrix vertically */
     justify-content: center;  /* Centers the matrix horizontally */
     width: 50%;  /* Takes up 50% of the container width */
+    position: relative;
 }
 
-#matrix-open-paren,
-#matrix-close-paren {
-    line-height: 1;
-    vertical-align: bottom;
-    margin: auto 0;
-    font-size: 1px;  /* Initial small size, will be set dynamically */
-}
-
-#matrix-container {
+.matrix-container {
     display: flex;
     flex-wrap: wrap;
+    position:absolute;
+    top: 0;
 }
-
-.matrix-row {
-    width: 100%;
-    display: flex;
-}
-
-.matrix-cell {
-    width: 33.33%;
-    text-align: center;
-}
-
-.matrix-separator {
-    text-align: center;
-}
-
   
 /* BUTTON style info */
 #button-container {

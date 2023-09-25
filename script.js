@@ -26,11 +26,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function setMatrix(document, matrixWrapper, {mainMatrix, augmentMatrix}) {
     // Get child elements from the matrix wrapper
-    const matrixContainer = matrixWrapper.querySelector('#matrix-container');
-
+    const oldMatrix = matrixWrapper.querySelector('.matrix-container');
+    const newMatrix = document.createElement("div");
     let LaTeXString = matrixToLaTeX({mainMatrix, augmentMatrix});
+    
+    newMatrix.classList.add("matrix-container");
+    newMatrix.innerHTML = LaTeXString;
 
-    matrixContainer.innerHTML = LaTeXString;
+    replaceFade(oldMatrix, newMatrix);
 }
 
 function resetBar(loadingBar) {
@@ -72,14 +75,12 @@ function replaceFade(element, replacement) {
     replacement.style.transition = "opacity 0.5s ease, transform 0.5s ease";
     replacement.style.transform = "translateX(100px)";
     replacement.style.position = "absolute";
-
-    // Append replacement to the same parent as the element
-    element.parentNode.appendChild(replacement);
-
     replacement.style.display = "";
-  
+
+    
     // Append replacement to the same parent as the element
     element.parentNode.appendChild(replacement);
+
   
     // Perform the animation
     setTimeout(() => {

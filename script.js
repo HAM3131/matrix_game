@@ -1,56 +1,51 @@
 import { RowOp, Rational, Matrix } from "./mathUtilities.js";
 
 let loadingBars = {
-    'RowOpBar': {bar: '', value: 0, period: 5000}
+    'RowOpBarOne': {DOM: '', value: 0, period: 5000, func: actionOne}
 };
 
+let matrices = {
+    'MatrixOne': {DOM: null, matrix: null}
+};
+
+matrices['MatrixOne'].matrix = new Matrix(
+    [
+        [1, 1, 0],
+        [0, 0, new Rational(1, 5)],
+        [0, 1, 0]
+    ],
+    [
+        [10],
+        [new Rational(3, 2)],
+        [-4]
+    ]
+)   
+
+
 document.addEventListener("DOMContentLoaded", () => {
-    let matrix = new Matrix(
-        [
-            [1, 1, 0],
-            [0, 0, new Rational(1, 5)],
-            [0, 1, 0]
-        ],
-        [
-            [10],
-            [new Rational(3, 2)],
-            [-4]
-        ]
-    )   
-    
-    const matrixWrapper = document.getElementById('matrix-wrapper');
-    setMatrix(document, matrixWrapper, matrix);
+    const getMatrices = document.getElementsByClassName('matrix-wrapper');
+    [...getMatrices].forEach(matrix => {
+        let name = matrix.getAttribute("data");
+        matrices[name].DOM = matrix;
+        setMatrix(matrices[name].DOM, matrices[name].matrix);
+    });
     
     const getLoadingBars = document.getElementsByClassName('loading-bar');
     [...getLoadingBars].forEach(bar => {
         let name = bar.getAttribute("data");
-        loadingBars[name].bar = bar;
+        loadingBars[name].DOM = bar;
     });
 
     setInterval(() => {
         gameTick(10)
     }, 10);
-
-    function rowOpsToCompletion(){
-        let rowOp = matrix.nextRowOp();
-        console.log(rowOp);
-        matrix.performRowOp(rowOp);
-        setTimeout(() => {
-            setMatrix(document, matrixWrapper, matrix)
-            if (matrix.nextRowOp().operation !== "none"){
-                rowOpsToCompletion();
-            }
-        }, 5000);
-    }
-
-    rowOpsToCompletion();
 });
 
 function gameTick(timePassed) {
     tickBars(timePassed);
 }
 
-function setMatrix(document, matrixWrapper, matrix) {
+function setMatrix(matrixWrapper, matrix) {
     // Get child elements from the matrix wrapper
     const oldMatrix = matrixWrapper.querySelector('.matrix-container');
     const newMatrix = document.createElement("div");
@@ -77,10 +72,11 @@ function tickBar(loadingBar, timePassed) {
     let percentage = value / period * 100;
     loadingBars[loadingBar].value = value;
     if (percentage >= 100) {
-        loadingBars[loadingBar].bar.style.width = `0%`;
+        loadingBars[loadingBar].DOM.style.width = `0%`;
         loadingBars[loadingBar].value = loadingBars[loadingBar].value % 5;
+        loadingBars[loadingBar].func();
     } else {
-        loadingBars[loadingBar].bar.style.width = `${percentage}%`;
+        loadingBars[loadingBar].DOM.style.width = `${percentage}%`;
     }
 }
 
@@ -113,4 +109,14 @@ function replaceFade(element, replacement) {
     setTimeout(() => {
       element.parentNode.removeChild(element);
     }, 500);
+}
+
+function actionOne() {
+    let rowOp = matrices["MatrixOne"].matrix.nextRowOp();
+    if (rowOp.operation === "none"){
+        // Handle the case where there isn't another row op to get to RREF
+    } else {
+        matrices["MatrixOne"].matrix.performRowOp(rowOp);
+        setMatrix(matrices["MatrixOne"].DOM, matrices["MatrixOne"].matrix);
+    }
 }

@@ -12,7 +12,7 @@
     align-items: center; /* Optional: to center align items horizontally */
 }
 
-#matrix-wrapper {
+.matrix-wrapper {
     display: flex;
     align-items: center;  /* Centers the matrix vertically */
     justify-content: center;  /* Centers the matrix horizontally */

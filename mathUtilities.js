@@ -60,7 +60,12 @@ export class RowOp {
     } else if (this.operation === "swap") {
       return `\\xrightarrow{R_{${this.row1 + 1}} \\leftrightarrow R_{${this.row2 + 1}}}`;
     } else if (this.operation === "replace") {
-      return `\\xrightarrow{R_{${this.row2 + 1}} \\leftarrow R_{${this.row2 + 1}} - ${this.scalar.toLaTeX()} R_{${this.row1 + 1}}}`;
+      if (this.scalar.toFloat() < 0){
+        let temp = new Rational(-this.scalar.numerator, this.scalar.denominator);
+        return `\\xrightarrow{R_{${this.row1 + 1}} \\leftarrow R_{${this.row1 + 1}} + ${temp.toLaTeX()} R_{${this.row2 + 1}}}`;
+      } else {
+        return `\\xrightarrow{R_{${this.row1 + 1}} \\leftarrow R_{${this.row1 + 1}} - ${this.scalar.toLaTeX()} R_{${this.row2 + 1}}}`;
+      }
     } else if (this.operation === "none") {
       return "";
     } else {
@@ -109,6 +114,11 @@ export class Rational {
       const commonGCD = this.gcd(numerator, denominator);
       this.numerator = numerator / commonGCD;
       this.denominator = denominator / commonGCD;
+
+      if (this.denominator < 0) {
+        this.denominator = -this.denominator;
+        this.numerator = -this.numerator;
+      }
     }
 
     static random(min=-999999999, max=999999999) {
@@ -138,8 +148,8 @@ export class Rational {
     }
 
     multiply(num) {
-      let numerator = this.numerator * num.numerator;
-      let denominator = this.denominator * num.denominator;
+      const numerator = this.numerator * num.numerator;
+      const denominator = this.denominator * num.denominator;
       return new Rational(numerator, denominator);
     }
 

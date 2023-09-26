@@ -8,19 +8,6 @@ let matrices = {
     'MatrixOne': {DOM: null, matrix: Matrix.randomWithUniqueSolution(3, 5), reward: 1}
 };
 
-// matrices['MatrixOne'].matrix = new Matrix(
-//     [
-//         [1, 1, 0],
-//         [0, 0, new Rational(1, 5)],
-//         [0, 1, 0]
-//     ],
-//     [
-//         [10],
-//         [new Rational(3, 2)],
-//         [-4]
-//     ]
-// )
-
 document.addEventListener("DOMContentLoaded", () => {
     const getMatrices = document.getElementsByClassName('matrix-wrapper');
     [...getMatrices].forEach(matrix => {
@@ -94,7 +81,6 @@ function replaceFade(element, replacement) {
     
     // Append replacement to the same parent as the element
     element.parentNode.appendChild(replacement);
-
   
     // Perform the animation
     setTimeout(() => {
@@ -114,6 +100,8 @@ function actionOne() {
     let rowOp = matrices["MatrixOne"].matrix.nextRowOp();
     if (rowOp.operation === "none"){
         // Handle the case where there isn't another row op to get to RREF
+        matrices["MatrixOne"].matrix = Matrix.randomWithUniqueSolution(3, 6);
+        setMatrix(matrices["MatrixOne"].DOM, matrices["MatrixOne"].matrix);
     } else {
         matrices["MatrixOne"].matrix.performRowOp(rowOp);
         setMatrix(matrices["MatrixOne"].DOM, matrices["MatrixOne"].matrix);

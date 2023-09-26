@@ -5,22 +5,21 @@ let loadingBars = {
 };
 
 let matrices = {
-    'MatrixOne': {DOM: null, matrix: null}
+    'MatrixOne': {DOM: null, matrix: Matrix.random(3, 3), reward: 1}
 };
 
-matrices['MatrixOne'].matrix = new Matrix(
-    [
-        [1, 1, 0],
-        [0, 0, new Rational(1, 5)],
-        [0, 1, 0]
-    ],
-    [
-        [10],
-        [new Rational(3, 2)],
-        [-4]
-    ]
-)   
-
+// matrices['MatrixOne'].matrix = new Matrix(
+//     [
+//         [1, 1, 0],
+//         [0, 0, new Rational(1, 5)],
+//         [0, 1, 0]
+//     ],
+//     [
+//         [10],
+//         [new Rational(3, 2)],
+//         [-4]
+//     ]
+// )
 
 document.addEventListener("DOMContentLoaded", () => {
     const getMatrices = document.getElementsByClassName('matrix-wrapper');

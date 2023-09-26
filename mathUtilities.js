@@ -1,72 +1,90 @@
 export class RowOp {
-    constructor(operation, row1, row2 = null, scalar = null) {
-        this.operation = operation; // "scale", "swap", "replace"
-        this.row1 = row1;
-        this.row2 = row2;
-        this.scalar = scalar; // Should be a Rational object
+  constructor(operation, row1, row2 = null, scalar = null) {
+    this.operation = operation; // "scale", "swap", "replace"
+    this.row1 = row1;
+    this.row2 = row2;
+    this.scalar = scalar; // Should be a Rational object
+  }
+
+  static fromMatrix(matrix) {
+    const rows = matrix.length;
+    const cols = matrix[0].length;
+
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        let entry = matrix[i][j];
+        if (entry.numerator !== 0) {
+        if (!(entry.numerator === 1 && entry.denominator === 1)) {
+            return new RowOp("scale", i, null, new Rational(1, entry.numerator));
+        }
+
+        for (let k = i + 1; k < rows; k++) {
+            const belowEntry = matrix[k][j];
+            if (belowEntry.numerator !== 0) {
+            return new RowOp("replace", i, k, belowEntry);
+            }
+        }
+        break;
+        }
+      }
     }
 
-    static fromMatrix(matrix) {
-        const rows = matrix.length;
-        const cols = matrix[0].length;
+    for (let i = 0; i < cols; i++) {
+      if(matrix[i][i].numerator !== 1){
+        for (let j = i + 1; j < rows; j++){
+          if(matrix[j][i].numerator === 1){
+              return new RowOp("swap", i, j);
+          }
+        }
+      }
+    }
     
-        for (let i = 0; i < rows; i++) {
-        for (let j = 0; j < cols; j++) {
-            let entry = matrix[i][j];
-            if (entry.numerator !== 0) {
-            if (!(entry.numerator === 1 && entry.denominator === 1)) {
-                return new RowOp("scale", i, null, new Rational(1, entry.numerator));
-            }
-    
-            for (let k = i + 1; k < rows; k++) {
-                const belowEntry = matrix[k][j];
-                if (belowEntry.numerator !== 0) {
-                return new RowOp("replace", i, k, belowEntry);
-                }
-            }
-            break;
-            }
-        }
-        }
+    return new RowOp("none", null);
+  }
 
-        for (let i = 0; i < cols; i++) {
-            if(matrix[i][i].numerator !== 1){
-                for (let j = i + 1; j < rows; j++){
-                    if(matrix[j][i].numerator === 1){
-                        return new RowOp("swap", i, j);
-                    }
-                }
-            }
-        }
-        
-        return new RowOp("none", null);
+  toString() {
+    if (this.operation === "scale") {
+      return `Scale row ${this.row1 + 1} by ${this.scalar}`;
+    } else if (this.operation === "swap") {
+      return `Swap row ${this.row1 + 1} and row ${this.row2 + 1}`;
+    } else if (this.operation === "replace") {
+      return `Replace row ${this.row2 + 1} with row ${this.row2 + 1} - (${this.scalar} * row ${this.row1 + 1})`;
+    } else {
+      return "Unknown operation";
     }
+  }
 
-    toString() {
-        if (this.operation === "scale") {
-        return `Scale row ${this.row1 + 1} by ${this.scalar}`;
-        } else if (this.operation === "swap") {
-        return `Swap row ${this.row1 + 1} and row ${this.row2 + 1}`;
-        } else if (this.operation === "replace") {
-        return `Replace row ${this.row2 + 1} with row ${this.row2 + 1} - (${this.scalar} * row ${this.row1 + 1})`;
-        } else {
-        return "Unknown operation";
-        }
+  toLaTeX() {
+    if (this.operation === "scale") {
+      return `\\xrightarrow{R_{${this.row1 + 1}} \\leftarrow ${this.scalar.toLaTeX()} R_{${this.row1 + 1}}}`;
+    } else if (this.operation === "swap") {
+      return `\\xrightarrow{R_{${this.row1 + 1}} \\leftrightarrow R_{${this.row2 + 1}}}`;
+    } else if (this.operation === "replace") {
+      return `\\xrightarrow{R_{${this.row2 + 1}} \\leftarrow R_{${this.row2 + 1}} - ${this.scalar.toLaTeX()} R_{${this.row1 + 1}}}`;
+    } else if (this.operation === "none") {
+      return "";
+    } else {
+      return "\\text{Unknown operation}";
     }
+  }
 
-    toLaTeX() {
-        if (this.operation === "scale") {
-          return `\\xrightarrow{R_{${this.row1 + 1}} \\leftarrow ${this.scalar.toLaTeX()} R_{${this.row1 + 1}}}`;
-        } else if (this.operation === "swap") {
-          return `\\xrightarrow{R_{${this.row1 + 1}} \\leftrightarrow R_{${this.row2 + 1}}}`;
-        } else if (this.operation === "replace") {
-          return `\\xrightarrow{R_{${this.row2 + 1}} \\leftarrow R_{${this.row2 + 1}} - ${this.scalar.toLaTeX()} R_{${this.row1 + 1}}}`;
-        } else if (this.operation === "none") {
-          return "";
-        } else {
-          return "\\text{Unknown operation}";
-        }
+  random(rows) {
+    let choice = Math.floor(Math.random() * 3);
+    let row1 = Math.floor(Math.random() * rows);
+    let row2 = null;
+    do {
+      row2 = Math.floor(Math.random() * rows);
+    } while (row1 === row2)
+
+    switch (choice){
+      case 0:
+        return new RowOp("scale", row1, null, Rational.randomFraction(1, 50));
+      case 0:
+        return new RowOp("replace", row1, row2, Rational.randomFraction(1, 50));
+      case 2:
+        return new RowOp("swap", row1, row2);
     }
+  }
 }
 
 export class Rational {
@@ -82,6 +100,28 @@ export class Rational {
       const commonGCD = this.gcd(numerator, denominator);
       this.numerator = numerator / commonGCD;
       this.denominator = denominator / commonGCD;
+    }
+
+    static random(min=-999999999, max=999999999) {
+      const denominator = Math.floor(Math.random() * (max + 1));
+      const numerator = (Math.floor(Math.random() * (max - min + 1)) + min) * denominator + Math.floor(Math.random() * (max - min + 1)) + min;
+      return new Rational(numerator, denominator);
+    }
+
+    static randomInt(min=-999999999, max=999999999){
+      const numerator = Math.floor(Math.random() * (max - min + 1)) + min;
+      return new Rational(numerator);
+    }
+
+    static randomFraction(min=-100, max=100, denominator=null){
+      if(!denominator){
+        denominator = Math.floor(Math.random() * (max + 1));
+        if(denominator === 0 || denominator === 1){
+          denominator = 2;
+        }
+      }
+      const numerator = (Math.floor(Math.random() * (max - min + 1)) + min) * denominator + Math.floor(Math.random() * (max - min + 1)) + min;
+      return new Rational(numerator, denominator)
     }
   
     gcd(a, b) {
@@ -157,6 +197,40 @@ export class Matrix {
     }
   }
 
+  static random(rows, cols=null, numberSet="smallIntegers") {
+    let matrix = [];
+
+    if (!cols){
+      cols = rows;
+    }
+
+    for (let i = 0; i < rows; i++){
+      let row = [];
+      for (let j = 0; j < cols; j++){
+        let element = null;
+        switch (numberSet){
+          case "smallIntegers":
+            element = Rational.randomInt(0, 10);
+            break;
+          case "smallFractions":
+            element = Rational.randomFraction();
+            break;
+          case "integers":
+            element = Rational.randomInt();
+            break;
+          case "fractions":
+            element = Rational.random();
+            break;
+          default:
+            throw new Error("Tried to generate a random matrix with an invalid number set.")
+        }
+        row.push(element);
+      }
+      matrix.push(row);
+    }
+    return new Matrix(matrix, []);
+  }
+
   static identity(size){
     let matrix = [];
     for (let i = 0; i < size; i++){
@@ -230,7 +304,7 @@ export class Matrix {
           for (let k = i + 1; k < rows; k++) {
             const belowEntry = this.matrix[k][j];
             if (belowEntry.numerator !== 0) {
-              return new RowOp("replace", i, k, belowEntry);
+              return new RowOp("replace", k, i, belowEntry);
             }
           }
           for (let k = 0; k < i; k++) {

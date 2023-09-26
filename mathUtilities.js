@@ -68,22 +68,31 @@ export class RowOp {
     }
   }
 
-  random(rows) {
-    let choice = Math.floor(Math.random() * 3);
+  static random(rows) {
+    let operation = Math.floor(Math.random() * 3);
     let row1 = Math.floor(Math.random() * rows);
     let row2 = null;
     do {
       row2 = Math.floor(Math.random() * rows);
     } while (row1 === row2)
 
-    switch (choice){
+    switch (operation){
       case 0:
-        return new RowOp("scale", row1, null, Rational.randomFraction(1, 50));
-      case 0:
-        return new RowOp("replace", row1, row2, Rational.randomFraction(1, 50));
+        return new RowOp("scale", row1, null, Rational.randomFraction(1, 3));
+      case 1:
+        return new RowOp("replace", row1, row2, Rational.randomInt(1, 50));
       case 2:
         return new RowOp("swap", row1, row2);
     }
+  }
+
+  static randomReplace(rows) {
+    let row1 = Math.floor(Math.random() * rows);
+    let row2 = null;
+    do {
+      row2 = Math.floor(Math.random() * rows);
+    } while (row1 === row2)
+    return new RowOp("replace", row1, row2, Rational.randomInt(1, 4));
   }
 }
 
@@ -229,6 +238,20 @@ export class Matrix {
       matrix.push(row);
     }
     return new Matrix(matrix, []);
+  }
+
+  static randomWithUniqueSolution(size, operations=10, numberSet="smallIntegers") {
+    let matrix = Matrix.identity(size)
+    matrix.augmentWith(Matrix.random(size, 1, numberSet));
+    let rowOpsSet = new Set();
+    while(rowOpsSet.size < operations){
+      let rowOp = RowOp.random(size);
+      if (!rowOpsSet.has(rowOp.toLaTeX())){
+        rowOpsSet.add(rowOp.toLaTeX());
+        matrix.performRowOp(rowOp);
+      }
+    }
+    return matrix;
   }
 
   static identity(size){

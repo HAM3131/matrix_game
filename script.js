@@ -5,7 +5,7 @@ let loadingBars = {
 };
 
 let matrices = {
-    'MatrixOne': {DOM: null, matrix: Matrix.random(3, 3), reward: 1}
+    'MatrixOne': {DOM: null, matrix: Matrix.randomWithUniqueSolution(3, 5), reward: 1}
 };
 
 // matrices['MatrixOne'].matrix = new Matrix(

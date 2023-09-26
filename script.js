@@ -1,39 +1,61 @@
-import { RowOp, Rational } from "./mathUtilities.js";
+import { RowOp, Rational, Matrix } from "./mathUtilities.js";
+
+let loadingBars = {
+    'RowOpBar': {bar: '', value: 0, period: 5000}
+};
 
 document.addEventListener("DOMContentLoaded", () => {
-    
-    const one = new Rational(1);
-    const zero = new Rational(0);
-    const matrix = {
-        mainMatrix: [
-            [one, zero, zero],
-            [zero, zero, one],
-            [zero, one, zero]
+    let matrix = new Matrix(
+        [
+            [1, 1, 0],
+            [0, 0, new Rational(1, 5)],
+            [0, 1, 0]
         ],
-        augmentMatrix: [
-            [new Rational(10, 1)],
+        [
+            [10],
             [new Rational(3, 2)],
-            [new Rational(-4, 1)]
+            [-4]
         ]
-    }   
+    )   
     
     const matrixWrapper = document.getElementById('matrix-wrapper');
     setMatrix(document, matrixWrapper, matrix);
     
-    const loadingBars = document.getElementsByClassName('loading-bar');
-    setInterval(() => tickBars(loadingBars), 10);
+    const getLoadingBars = document.getElementsByClassName('loading-bar');
+    [...getLoadingBars].forEach(bar => {
+        let name = bar.getAttribute("data");
+        loadingBars[name].bar = bar;
+    });
 
-    setTimeout(() => {
-        setMatrix(document, matrixWrapper, matrix)
-    }, 5000);
+    setInterval(() => {
+        gameTick(10)
+    }, 10);
+
+    function rowOpsToCompletion(){
+        let rowOp = matrix.nextRowOp();
+        console.log(rowOp);
+        matrix.performRowOp(rowOp);
+        setTimeout(() => {
+            setMatrix(document, matrixWrapper, matrix)
+            if (matrix.nextRowOp().operation !== "none"){
+                rowOpsToCompletion();
+            }
+        }, 5000);
+    }
+
+    rowOpsToCompletion();
 });
 
-function setMatrix(document, matrixWrapper, {mainMatrix, augmentMatrix}) {
+function gameTick(timePassed) {
+    tickBars(timePassed);
+}
+
+function setMatrix(document, matrixWrapper, matrix) {
     // Get child elements from the matrix wrapper
     const oldMatrix = matrixWrapper.querySelector('.matrix-container');
     const newMatrix = document.createElement("div");
-    let LaTeXString = matrixToLaTeX({mainMatrix, augmentMatrix});
-    let next = RowOp.fromMatrix(mainMatrix);
+    let LaTeXString = matrix.toLaTeX();
+    let next = matrix.nextRowOp();
     LaTeXString += next.toLaTeX();
     
     newMatrix.classList.add("matrix-container");
@@ -43,32 +65,22 @@ function setMatrix(document, matrixWrapper, {mainMatrix, augmentMatrix}) {
     replaceFade(oldMatrix, newMatrix);
 }
 
-function resetBar(loadingBar) {
-    loadingBar.classList.add('highlight');
-    loadingBar.style.width = '100%';
-    loadingBar.setAttribute('data-value', parseFloat(loadingBar.getAttribute('data-value')) - 5);
-    setTimeout(() => {
-        loadingBar.classList.remove('highlight');
-    }, 500);  // Keep the highlight for 1 second
+function tickBars(timePassed) {
+    Object.keys(loadingBars).forEach(key => {
+        tickBar(key, timePassed);
+    });
 }
 
-function tickBars(loadingBars) {
-    for (let i = 0; i < loadingBars.length; i++) {
-        fillBar(loadingBars[i]);
-    }
-}
-
-function fillBar(loadingBar) {
-    let timeWaited = parseFloat(loadingBar.getAttribute('data-value')) + 0.01;
-    let period = parseFloat(loadingBar.getAttribute('data-period'));
-    let percentage = timeWaited / period * 100;
-    loadingBar.setAttribute('data-value', timeWaited.toString());
+function tickBar(loadingBar, timePassed) {
+    let value = loadingBars[loadingBar].value + timePassed;
+    let period = loadingBars[loadingBar].period;
+    let percentage = value / period * 100;
+    loadingBars[loadingBar].value = value;
     if (percentage >= 100) {
-        resetBar(loadingBar);
+        loadingBars[loadingBar].bar.style.width = `0%`;
+        loadingBars[loadingBar].value = loadingBars[loadingBar].value % 5;
     } else {
-        if(!loadingBar.classList.contains('highlight')){
-            loadingBar.style.width = `${percentage}%`;
-        }
+        loadingBars[loadingBar].bar.style.width = `${percentage}%`;
     }
 }
 
@@ -101,48 +113,4 @@ function replaceFade(element, replacement) {
     setTimeout(() => {
       element.parentNode.removeChild(element);
     }, 500);
-}
-
-function matrixToLaTeX({mainMatrix, augmentMatrix}) {
-    let columnFormat = [];
-    for (let j = 0; j < mainMatrix[0].length; j++) {
-        columnFormat.push("c");
-    }
-
-    // Add vertical line for augmented matrix if it exists
-    if (augmentMatrix.length > 0) {
-    columnFormat.push("|");
-    for (let j = 0; j < augmentMatrix[0].length; j++) {
-        columnFormat.push("c");
-    }
-    }
-
-    // Initialize an empty LaTeX string
-    let latexString = "\\left[\\begin{array}{" + columnFormat.join("") + "}";
-
-    // Loop through each row of the main matrix
-    for (let i = 0; i < mainMatrix.length; i++) {
-    let row = [];
-    mainMatrix[i].forEach(element => {
-        row.push(element.toLaTeX());
-    });
-    latexString += row.join(" & ");
-
-    // If an augmented matrix exists, add the augmenting elements
-    if (augmentMatrix.length > 0) {
-        let augmentRow = [];
-        augmentMatrix[i].forEach(element => {
-            augmentRow.push(element.toLaTeX());
-        });
-        latexString += " & " + augmentRow.join(" & ");
-    }
-
-    // Add new row indicator
-    latexString += "\\\\";
-    }
-
-    // Close the LaTeX string
-    latexString += "\\end{array}\\right]";
-
-    return latexString;
 }

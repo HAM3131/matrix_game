@@ -62,7 +62,7 @@ export class RowOp {
         } else if (this.operation === "replace") {
           return `\\xrightarrow{R_{${this.row2 + 1}} \\leftarrow R_{${this.row2 + 1}} - ${this.scalar.toLaTeX()} R_{${this.row1 + 1}}}`;
         } else if (this.operation === "none") {
-          return "\\text{Matrix is in row-echelon form}";
+          return "";
         } else {
           return "\\text{Unknown operation}";
         }
@@ -87,6 +87,23 @@ export class Rational {
     gcd(a, b) {
       return b === 0 ? a : this.gcd(b, a % b);
     }
+
+    multiply(num) {
+      let numerator = this.numerator * num.numerator;
+      let denominator = this.denominator * num.denominator;
+      return new Rational(numerator, denominator);
+    }
+
+    add(num) {
+      const commonDenominator = this.denominator * num.denominator;
+      const newNumerator = (this.numerator * num.denominator) + (num.numerator * this.denominator);
+      return new Rational(newNumerator, commonDenominator);
+    }
+
+    subtract(num){
+      num = new Rational(-num.numerator, num.denominator);
+      return this.add(num);
+    }
   
     toString() {
       return this.denominator !== 1 ? `${this.numerator}/${this.denominator}` : `${this.numerator}`;
@@ -99,4 +116,194 @@ export class Rational {
     toFloat() {
       return this.numerator / this.denominator;
     }
+}
+
+export class Matrix {
+  constructor(matrix, augment = []) {
+    this.matrix = [];
+    this.augment = [];
+    let rows = matrix.length
+    let cols = matrix[0].length
+    for (let i = 0; i < rows; i++){
+      this.matrix.push([]);
+      for (let j = 0; j < cols; j++){
+        let element = matrix[i][j];
+        if (element instanceof Rational){
+          this.matrix[i].push(element);
+        } else if (!isNaN(element)) {
+          this.matrix[i].push(new Rational(element));
+        } else {
+          throw new Error(`Invalid element passed at row: ${i}, column: ${j}`);
+        }
+      }
+    }
+    if (augment.length > 0){
+      if (augment.length !== rows){
+        throw new Error("Augment has more/fewer rows than matrix")
+      }
+      for (let i = 0; i < rows; i++){
+        this.augment.push([]);
+        for (let j = 0; j < augment[0].length; j++){
+          let element = augment[i][j];
+          if (element instanceof Rational){
+            this.augment[i].push(element);
+          } else if (!isNaN(element)) {
+            this.augment[i].push(new Rational(element));
+          } else {
+            throw new Error(`Invalid element passed at row: ${i}, column: ${j}`);
+          }
+        }
+      }
+    }
+  }
+
+  static identity(size){
+    let matrix = [];
+    for (let i = 0; i < size; i++){
+      matrix.push([]);
+      for (let j = 0; j < size; j++){
+        let element = new Rational(0);
+        if(i === j){
+          element.numerator = 1;
+        }
+        matrix[i].push(element);
+      }
+    }
+    return new Matrix(matrix)
+  }
+
+  toLaTeX(){
+    let columnFormat = [];
+    for (let j = 0; j < this.matrix[0].length; j++) {
+      columnFormat.push("c");
+    }
+
+    // Add vertical line for augmented matrix if it exists
+    if (this.augment.length > 0) {
+      columnFormat.push("|");
+      for (let j = 0; j < this.augment[0].length; j++) {
+          columnFormat.push("c");
+      }
+    }
+
+    // Initialize an empty LaTeX string
+    let latexString = "\\left[\\begin{array}{" + columnFormat.join("") + "}";
+
+    // Loop through each row of the main matrix
+    for (let i = 0; i < this.matrix.length; i++) {
+      let row = [];
+      this.matrix[i].forEach(element => {
+          row.push(element.toLaTeX());
+      });
+      latexString += row.join(" & ");
+
+      // If an augmented matrix exists, add the augmenting elements
+      if (this.augment.length > 0) {
+          let augmentRow = [];
+          this.augment[i].forEach(element => {
+              augmentRow.push(element.toLaTeX());
+          });
+          latexString += " & " + augmentRow.join(" & ");
+      }
+
+      // Add new row indicator
+      latexString += "\\\\";
+      }
+
+      // Close the LaTeX string
+      latexString += "\\end{array}\\right]";
+
+      return latexString;
+  }
+
+  nextRowOp() {
+    const rows = this.matrix.length;
+    const cols = this.matrix[0].length;
+    
+    for (let i = 0; i < rows; i++) {
+      for (let j = 0; j < cols; j++) {
+        let entry = this.matrix[i][j];
+        if (entry.numerator !== 0) {
+          if (!(entry.numerator === 1 && entry.denominator === 1)) {
+            return new RowOp("scale", i, null, new Rational(entry.denominator, entry.numerator));
+          }
+          for (let k = i + 1; k < rows; k++) {
+            const belowEntry = this.matrix[k][j];
+            if (belowEntry.numerator !== 0) {
+              return new RowOp("replace", i, k, belowEntry);
+            }
+          }
+          for (let k = 0; k < i; k++) {
+            const aboveEntry = this.matrix[k][j];
+            if (aboveEntry.numerator !== 0) {
+              return new RowOp("replace", k, i, aboveEntry);
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    for (let i = 0; i < cols; i++) {
+      if(this.matrix[i][i].numerator !== 1){
+        for (let j = i + 1; j < rows; j++){
+          if(this.matrix[j][i].numerator === 1){
+            return new RowOp("swap", i, j);
+          }
+        }
+      }
+    }
+    
+    return new RowOp("none", null);
+  }
+
+  augmentWith(augment){
+    if (this.matrix.length !== augment.matrix.length){
+      throw new Error(`Tried to augment ${this.matrix.length} row matrix with a ${augment.matrix.length} row matrix`);
+    }
+    else {
+      this.augment = augment.matrix;
+    }
+  }
+
+  performRowOp(rowOp) {
+    const { operation, row1, row2, scalar } = rowOp;
+    const numRows = this.matrix.length;
+    if (row1 >= numRows || (row2 !== null && row2 >= numRows)) {
+      throw new Error("Row index out of bounds");
+    }
+
+    switch (operation) {
+      case "scale":
+        if (!scalar) throw new Error("Scalar value required for scaling");
+        for (let j = 0; j < this.matrix[row1].length; j++) {
+          this.matrix[row1][j] = this.matrix[row1][j].multiply(scalar);
+        }
+        if (this.augment.length > 0){
+          for (let j = 0; j < this.augment[row1].length; j++) {
+            this.augment[row1][j] = this.augment[row1][j].multiply(scalar);
+          }
+        }
+        break;
+      case "swap":
+        [this.matrix[row1], this.matrix[row2]] = [this.matrix[row2], this.matrix[row1]];
+        if (this.augment.length > 0){
+          [this.augment[row1], this.augment[row2]] = [this.augment[row2], this.augment[row1]];
+        }
+        break;
+      case "replace":
+        if (!scalar) throw new Error("Scalar value required for replacement");
+        for (let j = 0; j < this.matrix[row1].length; j++) {
+          this.matrix[row1][j] = this.matrix[row1][j].subtract(this.matrix[row2][j].multiply(scalar));
+        }
+        if (this.augment.length > 0){
+          for (let j = 0; j < this.augment[row1].length; j++) {
+            this.augment[row1][j] = this.augment[row1][j].subtract(this.augment[row2][j].multiply(scalar));
+          }
+        }
+        break;
+      default:
+        throw new Error("Invalid row operation");
+    }
+  }
 }
